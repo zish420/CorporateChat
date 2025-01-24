@@ -1,0 +1,266 @@
+﻿@{
+    ViewData["Title"] = "Chat Page";
+}
+
+<div class="container-fluid">
+    <div class="row vh-100">
+        <!-- Left Sidebar: Profile Picture, Search Box, and Chat List -->
+        <div class="col-3 bg-light p-3 border-end">
+            <h4 class="mb-3">Chats</h4>
+
+            
+            <!-- Search Box -->
+            <div class="mb-3 d-flex align-items-center">
+                <input type="text"
+                       id="searchUser"
+                       class="form-control"
+                       placeholder="Search users..." />
+                <button id="searchButton" class="btn btn-primary ms-2">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+            <ul id="userList" class="list-group mt-2">
+                <!-- Dynamic suggestions populated here -->
+            </ul>
+
+
+            <!-- Static Chat List (or dynamically load chat list) -->
+            <div id="chatList" class="list-group">
+                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                    <img src="https://via.placeholder.com/40" alt="Profile Pic" class="rounded-circle me-2">
+                    <span>User 1</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                    <img src="https://via.placeholder.com/40" alt="Profile Pic" class="rounded-circle me-2">
+                    <span>User 2</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-9">
+            <!-- Chat Header -->
+            <div id="chatHeader" class="d-flex align-items-center border-bottom p-3">
+                <img src="https://via.placeholder.com/50" alt="User Pic" class="rounded-circle me-3">
+                <h5 class="mb-0" id="activeUserName">User</h5>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chatMessages" class="chat-messages p-3" style="height: 70vh; overflow-y: scroll; background-color: #f9f9f9;">
+                <div class="d-flex flex-column">
+                    <div class="mb-3">
+                        <strong>User 1:</strong>
+                        <p class="bg-light rounded p-2">Hello, how are you?</p>
+                    </div>
+                    <div class="text-end mb-3">
+                        <strong>You:</strong>
+                        <p class="bg-primary text-white rounded p-2">I'm good, thanks! How about you?</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="p-3 border-top">
+                <div class="input-group">
+                    <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." />
+                    <button id="sendMessage" class="btn btn-primary">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .notification {
+    max-width: 300px;
+    border: 1px solid #ccc;
+    background-color: #007bff;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    animation: slide-in 0.5s ease-out;
+}
+
+@@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+    .list-group-item img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .chat-messages p {
+        max-width: 60%;
+    }
+
+    .chat-messages .text-end p {
+        margin-left: auto;
+    }
+
+    #userList li {
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    #userList li:hover {
+        background-color: #f0f0f0;
+    }
+
+    .bi-search {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.15/signalr.min.js"></script>
+<script>
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chatHub")
+        .build();
+
+    // Initialize the SignalR connection
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chatHub")
+        .build();
+
+    // Start SignalR connection
+    connection.start()
+        .then(() => console.log("SignalR connection established."))
+        .catch(err => console.error("SignalR connection error:", err.toString()));
+
+    // Listen for the 'ReceiveMessage' event
+    connection.on("ReceiveMessage", (sender, message) => {
+        // Display the message in the chat (you may have an existing implementation for this)
+        const chatMessages = document.getElementById("chatMessages");
+        chatMessages.innerHTML += `
+            <div class="mb-3">
+                <strong>${sender}:</strong>
+                <p class="bg-light rounded p-2">${message}</p>
+            </div>
+        `;
+
+        // Scroll to the bottom of the chat
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Show a notification pop-up
+        showNotification(`${sender} sent you a message!`, message);
+    });
+
+    // Function to show a pop-up notification
+    function showNotification(title, message) {
+        // Play a notification sound
+        const audio = new Audio('/lib/Sound/Notificationsfx.mp3');
+        audio.play();
+        // Create a notification container if it doesn't exist
+        if (!document.getElementById("notificationContainer")) {
+            const container = document.createElement("div");
+            container.id = "notificationContainer";
+            container.style.position = "fixed";
+            container.style.top = "10px";
+            container.style.right = "10px";
+            container.style.zIndex = "9999";
+            document.body.appendChild(container);
+        }
+
+        const container = document.getElementById("notificationContainer");
+
+        // Create the notification element
+        const notification = document.createElement("div");
+        notification.className = "notification bg-primary text-white p-3 mb-2 rounded shadow";
+        notification.style.transition = "opacity 0.5s ease";
+        notification.innerHTML = `
+            <strong>${title}</strong>
+            <p class="mb-0">${message}</p>
+        `;
+
+        // Append the notification to the container
+        container.appendChild(notification);      
+
+        // Automatically remove the notification after 5 seconds
+        setTimeout(() => {
+            notification.style.opacity = "0"; // Fade out
+            setTimeout(() => notification.remove(), 500); // Remove after fade-out
+        }, 5000);
+    }
+
+
+    // Search Users Dynamically
+    document.getElementById("searchUser").addEventListener("input", async function () {
+        const query = this.value.trim();
+        const userList = document.getElementById("userList");
+        userList.innerHTML = ""; // Clear current list
+
+        if (query.length < 2) return; // Fetch only if query is meaningful
+
+        try {
+            const response = await fetch(`/api/users/search?query=${query}`);
+            const users = await response.json();
+
+            if (users.length === 0) {
+                userList.innerHTML = `<li class="list-group-item">No users found</li>`;
+                return;
+            }
+
+            users.forEach(user => {
+                const li = document.createElement("li");
+                li.classList.add("list-group-item", "d-flex", "align-items-center");
+                li.innerHTML = `
+                        <img src="https://via.placeholder.com/40" alt="Profile Pic" class="rounded-circle me-2">
+                        <span>${user.userName}</span>
+                    `;
+                li.onclick = () => {
+                    setupChat(user.id, user.userName);
+                };
+                userList.appendChild(li);
+            });
+        } catch (err) {
+            console.error("Error fetching users:", err);
+        }
+    });
+
+    function setupChat(userId, userName) {
+        const chatHeader = document.getElementById("chatHeader");
+        const chatMessages = document.getElementById("chatMessages");
+
+        // Set active user in the header
+        chatHeader.querySelector("img").src = "https://via.placeholder.com/50"; // Replace with actual profile pic
+        document.getElementById("activeUserName").textContent = userName;
+
+        // Clear chat messages and set up chat
+        chatMessages.innerHTML = `<h4>Chatting with ${userName}</h4>`;
+    }
+
+    // Sending Messages
+    document.getElementById("sendMessage").onclick = function () {
+        const message = document.getElementById("messageInput").value;
+        if (!message.trim()) {
+            alert("Message cannot be empty!");
+            return;
+        }
+
+        // Append the message to the chat
+        const chatMessages = document.getElementById("chatMessages");
+        chatMessages.innerHTML += `
+                <div class="text-end mb-3">
+                    <strong>You:</strong>
+                    <p class="bg-primary text-white rounded p-2">${message}</p>
+                </div>
+            `;
+
+        // Clear input
+        document.getElementById("messageInput").value = "";
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+    };
+
+    connection.start().catch(function (err) {
+        console.error("SignalR connection error:", err.toString());
+    });
+</script>
