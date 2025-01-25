@@ -19,11 +19,11 @@
             <!-- Static Chat List (or dynamically load chat list) -->
             <div id="chatList" class="list-group">
                 <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                    <img src="https://via.placeholder.com/40" alt="Profile Pic" class="rounded-circle me-2">
+                    <img src="/lib/Sound/profile.png" alt="Profile Pic" class="rounded-circle me-2">
                     <span>User 1</span>
                 </a>
                 <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
-                    <img src="https://via.placeholder.com/40" alt="Profile Pic" class="rounded-circle me-2">
+                    <img src="/lib/Sound/profile.png" alt="Profile Pic" class="rounded-circle me-2">
                     <span>User 2</span>
                 </a>
             </div>
@@ -32,8 +32,8 @@
         <!-- Chat Area -->
         <div class="col-9">
             <!-- Chat Header -->
-            <div id="chatHeader" class="d-flex align-items-center border-bottom p-3">
-                <img src="https://via.placeholder.com/50" alt="Active User Pic" class="rounded-circle me-3">
+            <div id="chatHeader" class="d-flex align-items-center border-bottom p-2">
+                <img src="/lib/Sound/profile.png" alt="Active User Pic" class="rounded-circle me-3" style="max-width: 50px; max-height: 50px;">
                 <h5 class="mb-0" id="activeUserName">Active User</h5>
             </div>
 
@@ -113,7 +113,7 @@
                 const li = document.createElement("li");
                 li.classList.add("list-group-item", "d-flex", "align-items-center");
                 li.innerHTML = `
-                        <img src="https://via.placeholder.com/40" alt="Profile Pic" class="rounded-circle me-2">
+                            <img src="/lib/Sound/profile.png" alt="Profile Pic" class="rounded-circle me-2">
                         <span>${user.userName}</span>
                     `;
                 li.onclick = () => {
@@ -131,7 +131,7 @@
         const chatMessages = document.getElementById("chatMessages");
 
         // Set active user in the header
-        chatHeader.querySelector("img").src = "https://via.placeholder.com/50"; // Replace with actual profile pic
+        chatHeader.querySelector("img").src = "/lib/Sound/profile.png"; 
         document.getElementById("activeUserName").textContent = userName;
 
         // Clear chat messages and set up chat
@@ -157,7 +157,7 @@
 
         // Clear input
         document.getElementById("messageInput").value = "";
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight; 
     };
 
     connection.start().catch(function (err) {

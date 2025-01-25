@@ -45,8 +45,14 @@ namespace EmpChat.Hubs
             if (UserConnections.TryGetValue(targetUser, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("ReceiveMessage", Context.User.Identity.Name, message);
+                Console.WriteLine($"Message sent to {targetUser} with connection ID {connectionId}");
+            }
+            else
+            {
+                Console.WriteLine($"User {targetUser} not connected.");
             }
         }
+
     }
 
 }
