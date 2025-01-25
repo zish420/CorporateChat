@@ -50,8 +50,7 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    //pattern: "{controller=Home}/{action=Index}/{id?}");
-    pattern: "{controller=Chat}/{action=Index2}");
+    pattern: "{controller=Chat}/{action=Index2}/{id?}");
 app.MapRazorPages();
 app.MapHub<ChatHub>("/chathub");
 app.Run();
