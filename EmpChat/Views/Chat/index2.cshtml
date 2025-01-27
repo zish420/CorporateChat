@@ -3,6 +3,8 @@
 }
 
 <div class="container-fluid">
+    <input type="hidden" id="currentUserId" value="@User.FindFirst("id")?.Value" />
+
     <div class="row vh-100">
         <!-- Left Sidebar: Profile Picture, Search Box, and Chat List -->
         <div class="col-3 bg-light p-3 border-end">
