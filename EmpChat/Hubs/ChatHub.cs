@@ -15,55 +15,32 @@ namespace EmpChat.Hubs
             _context = context;
         }
 
-        public async Task SendMessage(string senderId, string receiverId, string message)
+        public async Task SendMessage(string receiverId, string message)
         {
+            var senderId = Context.UserIdentifier; // Automatically retrieves the authenticated user's ID
+            if (string.IsNullOrEmpty(senderId))
+            {
+                Console.WriteLine("Sender ID is null. Ensure authentication is configured correctly.");
+                throw new UnauthorizedAccessException("Sender is not authenticated.");
+            }
+
             Console.WriteLine($"Sender: {senderId}, Receiver: {receiverId}, Message: {message}");
-
-            var actualSenderId = _userManager.GetUserId(Context.User);
-            if (string.IsNullOrEmpty(actualSenderId))
-            {
-                Console.WriteLine("Error: actualSenderId is null or empty.");
-                return;
-            }
-
-            if (actualSenderId != senderId)
-            {
-                Console.WriteLine("Unauthorized sender ID.");
-                throw new UnauthorizedAccessException("Sender ID does not match the authenticated user.");
-            }
 
             // Save the message
             var chatMessage = new ChatMessage
             {
-                SenderId = actualSenderId,
+                SenderId = senderId,
                 ReceiverId = receiverId,
                 Message = message,
                 SentAt = DateTime.UtcNow
             };
 
             _context.ChatMessages.Add(chatMessage);
-            try
-            {
-                await _context.SaveChangesAsync();
-                Console.WriteLine("Message saved to database.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving message: {ex.Message}");
-                throw;
-            }
+            await _context.SaveChangesAsync();
 
-            // Notify users
-            try
-            {
-                await Clients.User(senderId).SendAsync("ReceiveMessage", receiverId, message);
-                await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message);
-                Console.WriteLine("Message sent to both sender and receiver.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error notifying users: {ex.Message}");
-            }
+            // Notify both users
+            await Clients.User(senderId).SendAsync("ReceiveMessage", receiverId, message);
+            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message);
         }
 
 

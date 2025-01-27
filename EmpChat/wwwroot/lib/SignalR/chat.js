@@ -25,30 +25,26 @@ connection.on("ReceiveMessage", (senderId, message) => {
 document.getElementById("sendMessage").addEventListener("click", () => {
     const recipientId = document.getElementById("activeUserName").dataset.userId; // The selected recipient
     const message = document.getElementById("messageInput").value;
-    const currentUserId = document.getElementById("currentUserId").value;
-
-    console.log(`Sending message: Sender=${currentUserId}, Recipient=${recipientId}, Message=${message}`);
-
 
     if (!recipientId || !message.trim()) {
         alert("Select a user and type a message before sending.");
         return;
     }
 
-    const currentUserId = document.getElementById("currentUserId").value; // Fetch the current user's ID dynamically
-    connection.invoke("SendMessage", currentUserId, recipientId, message)
+    connection.invoke("SendMessage", recipientId, message)
         .then(() => {
             // Add the message to the chat UI
             const messageHtml = `<div class="text-end mb-3">
-            <strong>You:</strong>
-            <p class="bg-primary text-white rounded p-2">${message}</p>
-        </div>`;
+                <strong>You:</strong>
+                <p class="bg-primary text-white rounded p-2">${message}</p>
+            </div>`;
             document.getElementById("chatMessages").innerHTML += messageHtml;
 
             document.getElementById("messageInput").value = ""; // Clear the input
         })
         .catch(err => console.error("Error sending message:", err));
 });
+
 
 // Search users and populate the list
 document.getElementById("searchUser").addEventListener("keydown", async function (event) {
