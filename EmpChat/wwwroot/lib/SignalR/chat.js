@@ -8,21 +8,22 @@ connection.start()
     .catch(err => console.error("SignalR connection error:", err));
 
 // Listen for incoming messages
-connection.on("ReceiveMessage", (senderId, message) => {
+connection.on("ReceiveMessage", (senderId, message, timestamp) => {
     // Display a notification
     alert(`New message from ${senderId}: ${message}`);
-    console.log(`Message received from ${senderId}: ${message}`);
+    console.log(`Message received from ${senderId}: ${message} at ${timestamp}`);
 
     // Add the message to the chat area
     const messageHtml = `<div class="text-start mb-3">
         <strong>${senderId}:</strong>
         <p class="bg-light rounded p-2">${message}</p>
+        <small>${new Date(timestamp).toLocaleTimeString()}</small>
     </div>`;
-    document.getElementById("chatMessages").innerHTML += messageHtml;
+    chatMessages.innerHTML += messageHtml;
 });
 
 // Send message to the server
-document.getElementById("sendMessage").addEventListener("click", () => {
+document.getElementById("sendMessage").addEventListener("click", async () => {
     const recipientId = document.getElementById("activeUserName").dataset.userId; // The selected recipient
     const message = document.getElementById("messageInput").value;
 
@@ -31,20 +32,26 @@ document.getElementById("sendMessage").addEventListener("click", () => {
         return;
     }
 
-    connection.invoke("SendMessage", recipientId, message)
-        .then(() => {
-            // Add the message to the chat UI
-            const messageHtml = `<div class="text-end mb-3">
-                <strong>You:</strong>
-                <p class="bg-primary text-white rounded p-2">${message}</p>
-            </div>`;
-            document.getElementById("chatMessages").innerHTML += messageHtml;
+    try {
+        const response = await fetch("/Index2?handler=SendMessage", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ receiverId: recipientId, message: message })
+        });
 
-            document.getElementById("messageInput").value = ""; // Clear the input
-        })
-        .catch(err => console.error("Error sending message:", err));
+        const result = await response.json();
+
+        if (result.success) {
+            console.log("Message sent successfully.");
+        } else {
+            console.error("Error sending message.");
+        }
+    } catch (err) {
+        console.error("Error sending message:", err);
+    }
 });
-
 
 // Search users and populate the list
 document.getElementById("searchUser").addEventListener("keydown", async function (event) {

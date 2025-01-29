@@ -17,16 +17,16 @@ namespace EmpChat.Hubs
 
         public async Task SendMessage(string receiverId, string message)
         {
-            var senderId = Context.UserIdentifier; // Automatically retrieves the authenticated user's ID
+            var senderId = Context.UserIdentifier; // Retrieves authenticated user's ID
+
             if (string.IsNullOrEmpty(senderId))
             {
-                Console.WriteLine("Sender ID is null. Ensure authentication is configured correctly.");
-                throw new UnauthorizedAccessException("Sender is not authenticated.");
+                Console.WriteLine("Unauthorized sender. Message not sent.");
+                return;
             }
 
             Console.WriteLine($"Sender: {senderId}, Receiver: {receiverId}, Message: {message}");
 
-            // Save the message
             var chatMessage = new ChatMessage
             {
                 SenderId = senderId,
@@ -38,11 +38,10 @@ namespace EmpChat.Hubs
             _context.ChatMessages.Add(chatMessage);
             await _context.SaveChangesAsync();
 
-            // Notify both users
-            await Clients.User(senderId).SendAsync("ReceiveMessage", receiverId, message);
-            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message);
+            // Notify both sender and receiver via SignalR
+            await Clients.User(senderId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt);
+            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt);
         }
-
 
         public override async Task OnConnectedAsync()
         {
