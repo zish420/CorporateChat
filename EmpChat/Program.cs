@@ -38,7 +38,7 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<Employee>>();
 
-    await SeedRolesAsync(roleManager);   
+    await SeedRolesAsync(roleManager);
 }
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

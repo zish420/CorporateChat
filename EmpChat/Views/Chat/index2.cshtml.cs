@@ -36,9 +36,9 @@ namespace EmpChat.Views.Chat
         }
 
         [HttpPost]
-        public async Task<IActionResult> OnPostSendMessageAsync([FromBody] ChatMessage model)
+        public async Task<IActionResult> OnPostSendMessageAsync([FromBody] SendMessageModel model)
         {
-            if (!ModelState.IsValid || string.IsNullOrEmpty(model.ReceiverId) || string.IsNullOrEmpty(model.Message))
+            if (!ModelState.IsValid)
             {
                 return BadRequest("Invalid message data.");
             }
@@ -49,7 +49,6 @@ namespace EmpChat.Views.Chat
                 return Unauthorized();
             }
 
-            // Save message to the database
             var chatMessage = new ChatMessage
             {
                 SenderId = senderId,
@@ -61,11 +60,18 @@ namespace EmpChat.Views.Chat
             _context.ChatMessages.Add(chatMessage);
             await _context.SaveChangesAsync();
 
-            // Send message via SignalR to both sender and receiver
+            // Notify recipient via SignalR
             await _chatHub.Clients.User(model.ReceiverId).SendAsync("ReceiveMessage", senderId, model.Message, chatMessage.SentAt);
             await _chatHub.Clients.User(senderId).SendAsync("ReceiveMessage", senderId, model.Message, chatMessage.SentAt);
 
-            return new JsonResult(new { success = true, timestamp = chatMessage.SentAt });
+            return new JsonResult(new { success = true });
         }
     }
+
+    public class SendMessageModel
+    {
+        public string ReceiverId { get; set; }
+        public string Message { get; set; }
+    }
+
 }

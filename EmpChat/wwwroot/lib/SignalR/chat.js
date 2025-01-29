@@ -2,29 +2,28 @@
     .withUrl("/chathub")
     .build();
 
-// Start the SignalR connection
+// Start SignalR Connection
 connection.start()
     .then(() => console.log("SignalR connection established."))
     .catch(err => console.error("SignalR connection error:", err));
 
 // Listen for incoming messages
 connection.on("ReceiveMessage", (senderId, message, timestamp) => {
-    // Display a notification
     alert(`New message from ${senderId}: ${message}`);
     console.log(`Message received from ${senderId}: ${message} at ${timestamp}`);
 
-    // Add the message to the chat area
+    // Add message to chat area
     const messageHtml = `<div class="text-start mb-3">
         <strong>${senderId}:</strong>
         <p class="bg-light rounded p-2">${message}</p>
         <small>${new Date(timestamp).toLocaleTimeString()}</small>
     </div>`;
-    chatMessages.innerHTML += messageHtml;
+    document.getElementById("chatMessages").innerHTML += messageHtml;
 });
 
-// Send message to the server
+// Send Message Function
 document.getElementById("sendMessage").addEventListener("click", async () => {
-    const recipientId = document.getElementById("activeUserName").dataset.userId; // The selected recipient
+    const recipientId = document.getElementById("activeUserName").dataset.userId; // Selected recipient
     const message = document.getElementById("messageInput").value;
 
     if (!recipientId || !message.trim()) {
