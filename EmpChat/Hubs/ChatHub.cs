@@ -17,7 +17,7 @@ namespace EmpChat.Hubs
 
         public async Task SendMessage(string receiverId, string message)
         {
-            var senderId = Context.UserIdentifier; // Get authenticated user's ID
+            var senderId = Context.UserIdentifier; 
 
             if (string.IsNullOrEmpty(senderId))
             {

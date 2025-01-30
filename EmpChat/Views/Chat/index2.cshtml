@@ -89,11 +89,10 @@
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.15/signalr.min.js"></script>
-<script>
-    const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/chatHub")
-        .build();
+<script src="/lib/SignalR/chat.js"></script>
 
+ <script>
+    
     // Search Users Dynamically
     document.getElementById("searchUser").addEventListener("input", async function () {
         const query = this.value.trim();
@@ -140,29 +139,4 @@
         chatMessages.innerHTML = `<h4>Chatting with ${userName}</h4>`;
     }
 
-    // Sending Messages
-    document.getElementById("sendMessage").onclick = function () {
-        const message = document.getElementById("messageInput").value;
-        if (!message.trim()) {
-            alert("Message cannot be empty!");
-            return;
-        }
-
-        // Append the message to the chat
-        const chatMessages = document.getElementById("chatMessages");
-        chatMessages.innerHTML += `
-                <div class="text-end mb-3">
-                    <strong>You:</strong>
-                    <p class="bg-primary text-white rounded p-2">${message}</p>
-                </div>
-            `;
-
-        // Clear input
-        document.getElementById("messageInput").value = "";
-        chatMessages.scrollTop = chatMessages.scrollHeight; 
-    };
-
-    connection.start().catch(function (err) {
-        console.error("SignalR connection error:", err.toString());
-    });
-</script>
+</script> 
