@@ -17,7 +17,9 @@ namespace EmpChat.Hubs
 
         public async Task SendMessage(string receiverId, string message)
         {
-            var senderId = Context.UserIdentifier; 
+            var senderId = Context.UserIdentifier;
+            var senderUser = await _userManager.FindByIdAsync(senderId);
+            var senderEmail = senderUser?.Email ?? "Unknown User"; // Ensure we get an email
 
             if (string.IsNullOrEmpty(senderId))
             {
@@ -25,7 +27,7 @@ namespace EmpChat.Hubs
                 return;
             }
 
-            Console.WriteLine($"Sender: {senderId}, Receiver: {receiverId}, Message: {message}");
+            Console.WriteLine($"SendMessage called - Sender: {senderEmail}, Receiver: {receiverId}, Message: {message}");
 
             var chatMessage = new ChatMessage
             {
@@ -38,10 +40,9 @@ namespace EmpChat.Hubs
             _context.ChatMessages.Add(chatMessage);
             await _context.SaveChangesAsync();
 
-            // Notify both sender and receiver via SignalR
-            await Clients.User(senderId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt);
-            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt);
+            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt, senderEmail);
         }
+
 
         public override async Task OnConnectedAsync()
         {

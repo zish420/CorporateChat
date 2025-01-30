@@ -1,8 +1,8 @@
 ﻿document.addEventListener("DOMContentLoaded", () => {
     const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/chathub")
-    .withAutomaticReconnect()
-    .build();
+        .withUrl("/chathub")
+        .withAutomaticReconnect()
+        .build();
 
     // Start SignalR Connection
     connection.start()
@@ -10,23 +10,71 @@
         .catch(err => console.error("SignalR connection error:", err));
 
     // Listen for incoming messages
-    connection.on("ReceiveMessage", (senderId, message, timestamp) => {
-        alert(`New message from ${senderId}: ${message}`);
-        console.log(`Message received from ${senderId}: ${message} at ${timestamp}`);
+    connection.on("ReceiveMessage", (senderId, message, timestamp, senderEmail) => {
+        const chatMessages = document.getElementById("chatMessages");
+        const currentUserId = document.getElementById("currentUserId").value;
 
-        // Add message to chat area
-        const messageHtml = `<div class="text-start mb-3">
-            <strong>${senderId}:</strong>
-            <p class="bg-light rounded p-2">${message}</p>
-            <small>${new Date(timestamp).toLocaleTimeString()}</small>
-        </div>`;
-        document.getElementById("chatMessages").innerHTML += messageHtml;
+        console.log("Message received from:", senderEmail); // Debugging
+
+        // If the message is from another user, show a notification
+        if (senderId !== currentUserId) {
+            const userConfirmed = confirm(`New message from ${senderEmail}: ${message}\nClick OK to open chat.`);
+            if (userConfirmed) {
+                setupChat(senderId, senderEmail); // 🔥 Switch to sender's chat automatically
+            }
+        }
+
+        // ✅ Append the received message correctly
+        const isMyMessage = senderId === currentUserId;
+        appendMessage(senderEmail, message, timestamp, isMyMessage);
     });
 
-    // Send Message Function
+    // Function to append messages properly
+    function appendMessage(senderDisplay, message, timestamp, isMyMessage) {
+        const chatMessages = document.getElementById("chatMessages");
+
+        // ✅ Correct alignment for sent & received messages
+        const alignment = isMyMessage ? "text-end" : "text-start";
+        const bgClass = isMyMessage ? "bg-primary text-white" : "bg-secondary text-dark";
+
+        const messageHtml = `
+        <div class="${alignment} mb-3">
+            <strong>${senderDisplay}:</strong>
+            <p class="${bgClass} rounded p-2">${message}</p>
+            <small>${new Date(timestamp).toLocaleTimeString()}</small>
+        </div>
+    `;
+
+        chatMessages.innerHTML += messageHtml;
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest message
+    }
+
+
+    ////// Function to append messages properly
+    ////function appendMessage(senderDisplay, message, timestamp, isMyMessage) {
+    ////    const chatMessages = document.getElementById("chatMessages");
+
+    ////    const alignment = isMyMessage ? "text-end" : "text-start";
+    ////    const bgClass = isMyMessage ? "bg-primary text-white" : "bg-secondary text-dark";
+
+    ////    const messageHtml = `
+    ////    <div class="${alignment} mb-3">
+    ////        <strong>${senderDisplay}:</strong>
+    ////        <p class="${bgClass} rounded p-2">${message}</p>
+    ////        <small>${new Date(timestamp).toLocaleTimeString()}</small>
+    ////    </div>
+    ////`;
+
+    //    chatMessages.innerHTML += messageHtml;
+    //    chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest message
+    //}
+
+
     document.getElementById("sendMessage").addEventListener("click", async () => {
-        const recipientId = document.getElementById("activeUserName").dataset.userId;
-        const message = document.getElementById("messageInput").value;
+        const activeUserElement = document.getElementById("activeUserName");
+        const recipientId = activeUserElement?.dataset.userId;
+        const message = document.getElementById("messageInput")?.value;
+        const chatMessages = document.getElementById("chatMessages");
 
         if (!recipientId || !message.trim()) {
             alert("Select a user and type a message before sending.");
@@ -35,94 +83,80 @@
 
         try {
             console.log("Attempting to send message via SignalR...");
+
+            // ✅ Immediately append message to sender UI
+            const sentMessageHtml = `
+            <div class="text-end mb-3">
+                <strong>You:</strong>
+                <p class="bg-primary text-white rounded p-2">${message}</p>
+                <small>${new Date().toLocaleTimeString()}</small>
+            </div>
+        `;
+            chatMessages.innerHTML += sentMessageHtml;
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest message
+
             await connection.invoke("SendMessage", recipientId, message);
             console.log("Message sent via SignalR.");
+
+            // Clear input after sending
+            document.getElementById("messageInput").value = "";
+
         } catch (err) {
             console.error("Error sending message via SignalR:", err);
         }
     });
 
-    //// Search users and populate the list
-    //document.getElementById("searchUser").addEventListener("keydown", async function (event) {
-    //    if (event.key === "Enter") {
-    //        event.preventDefault(); // Prevent form submission or page reload
 
-    //        const query = this.value.trim();
-    //        const userList = document.getElementById("userList");
-    //        userList.innerHTML = ""; // Clear current list
+    // 🔄 Updated Search Users Dynamically
+    document.getElementById("searchUser").addEventListener("input", async function () {
+        const query = this.value.trim();
+        const userList = document.getElementById("userList");
+        userList.innerHTML = ""; // Clear current list
 
-    //        if (query.length < 2) {
-    //            userList.innerHTML = `<li class="list-group-item">Please enter at least 2 characters</li>`;
-    //            return;
-    //        }
+        if (query.length < 2) return; // Fetch only if query is meaningful
 
-    //        try {
-    //            const response = await fetch(`/api/users/search?query=${query}`);
-    //            const users = await response.json();
+        try {
+            const response = await fetch(`/api/users/search?query=${query}`);
+            const users = await response.json();
 
-    //            if (users.length === 0) {
-    //                userList.innerHTML = `<li class="list-group-item">No users found</li>`;
-    //                return;
-    //            }
+            if (users.length === 0) {
+                userList.innerHTML = `<li class="list-group-item">No users found</li>`;
+                return;
+            }
 
-    //            users.forEach(user => {
-    //                const li = document.createElement("li");
-    //                li.classList.add("list-group-item", "d-flex", "align-items-center");
-    //                li.innerHTML = `
-    //                    <img src="/lib/Sound/profile.png" alt="Profile Pic" class="rounded-circle me-2">
-    //                    <span>${user.userName}</span>
-    //                `;
-    //                li.onclick = () => {
-    //                    setupChat(user.id, user.userName);
-    //                };
-    //                userList.appendChild(li);
-    //            });
-    //        } catch (err) {
-    //            console.error("Error fetching users:", err);
-    //            userList.innerHTML = `<li class="list-group-item text-danger">Error fetching results</li>`;
-    //        }
-    //    }
-    //});
+            users.forEach(user => {
+                const li = document.createElement("li");
+                li.classList.add("list-group-item", "d-flex", "align-items-center");
+                li.innerHTML = `
+                    <img src="/lib/Sound/profile.png" alt="Profile Pic" class="rounded-circle me-2">
+                    <span>${user.userName}</span>
+                `;
+                li.onclick = () => {
+                    setupChat(user.id, user.userName);
+                };
+                userList.appendChild(li);
+            });
+        } catch (err) {
+            console.error("Error fetching users:", err);
+        }
+    });
 
-    //let activeRecipientId = null; // Global variable to store the active user's ID
+    // 🔄 Updated Setup Chat Function
+    function setupChat(userId, userEmail) {
+        const chatHeader = document.getElementById("chatHeader");
+        const chatMessages = document.getElementById("chatMessages");
+        const activeUserNameElement = document.getElementById("activeUserName");
 
-    //async function setupChat(userId, userName) {
-    //    const chatHeader = document.getElementById("chatHeader");
-    //    const chatMessages = document.getElementById("chatMessages");
+        // Set active user in the header
+        chatHeader.querySelector("img").src = "/lib/Sound/profile.png";
+        activeUserNameElement.textContent = userEmail;
 
-    //    activeRecipientId = userId;
-    //    chatHeader.querySelector("img").src = "/lib/Sound/profile.png";
-    //    const activeUserNameElement = document.getElementById("activeUserName");
-    //    activeUserNameElement.textContent = userName;
-    //    activeUserNameElement.dataset.userId = userId; 
+        // ✅ Ensure dataset.userId is set correctly
+        activeUserNameElement.dataset.userId = userId;
 
-    //    // Fetch previous messages
-    //    try {
-    //        const response = await fetch(`/api/messages?userId=${userId}`);
-    //        const messages = await response.json();
-
-    //        chatHeader.querySelector("img").src = "/lib/Sound/profile.png";
-    //        const activeUserNameElement = document.getElementById("activeUserName");
-    //        activeUserNameElement.textContent = userName;
-    //        activeUserNameElement.dataset.userId = userId;
-
-    //        chatMessages.innerHTML = `<h4>Chatting with ${userName}</h4>`;
-    //        messages.forEach(msg => {
-    //            const alignment = msg.senderId === currentUserId ? "text-end" : "text-start";
-    //            const bgClass = msg.senderId === currentUserId ? "bg-primary text-white" : "bg-light";
-    //            chatMessages.innerHTML += `
-    //                <div class="${alignment} mb-3">
-    //                    <strong>${msg.senderName}:</strong>
-    //                    <p class="${bgClass} rounded p-2">${msg.message}</p>
-    //                </div>
-    //            `;
-    //        });
-    //        chatMessages.scrollTop = chatMessages.scrollHeight;
-    //    } catch (err) {
-    //        console.error("Error fetching messages:", err);
-    //    }
-
-    //}
+        // Clear chat messages and set up chat
+        chatMessages.innerHTML = `<h4>Chatting with ${userEmail}</h4>`;
+    }
 
     connection.onclose(err => {
         alert("Connection lost. Trying to reconnect...");
