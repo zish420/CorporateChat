@@ -28,22 +28,37 @@
         chatList.innerHTML = "";
 
         try {
-            const response = await fetch(`/api/recent-chats`);
+            const response = await fetch(`/api/Message/recent-chats`);
             const recentChats = await response.json();
 
-            recentChats.forEach(chat => {
+            for (let chat of recentChats) {
+                const userEmail = await getUserEmail(chat.chatPartnerId); // Fetch email
+
                 const chatItem = document.createElement("a");
                 chatItem.classList.add("list-group-item", "list-group-item-action", "d-flex", "align-items-center");
                 chatItem.dataset.userId = chat.ChatPartnerId;
                 chatItem.innerHTML = `
                 <img src="/lib/Sound/profile.png" class="rounded-circle me-2">
-                <span>${chat.ChatPartnerId}</span> <!-- Replace with user name lookup -->
+                <span>${userEmail || "Unknown User"}</span>
             `;
-                chatItem.onclick = () => setupChat(chat.ChatPartnerId, chat.ChatPartnerId);
+                chatItem.onclick = () => setupChat(chat.chatPartnerId, userEmail);
                 chatList.appendChild(chatItem);
-            });
+            }
         } catch (err) {
             console.error("Error loading recent chats:", err);
+        }
+    }
+
+
+    async function getUserEmail(userId) {
+        try {
+            const response = await fetch(`/api/users/${userId}`);
+            if (!response.ok) throw new Error("User not found");
+            const user = await response.json();
+            return user.userName; // Adjust field name if different
+        } catch (err) {
+            console.error(`Error fetching email for user ${userId}:`, err);
+            return "Unknown User";
         }
     }
 
@@ -90,14 +105,15 @@
         const activeUserElement = document.getElementById("activeUserName");
 
         if (senderId !== activeUserElement.dataset.userId) {
-            const userConfirmed = confirm(`New message from ${senderEmail}: ${message}\nClick OK to open chat.`);
+            const userConfirmed = confirm(`New message from ${senderEmail.normalizedUserName}: ${message}\nClick OK to open chat.`);
             if (userConfirmed) {
                 setupChat(senderId, senderEmail.normalizedUserName);
             } else {
                 updateUnreadCount(senderId);
             }
         } else {
-            appendMessage(senderEmail, message, timestamp, senderId === currentUserId);
+
+            appendMessage(senderEmail.normalizedUserName, message, timestamp, senderId, currentUserId);
         }
     });
 
@@ -132,15 +148,16 @@
 
 
     // ✅ Function to Append Messages Properly
-    function appendMessage(senderDisplay, message, timestamp, isMyMessage) {
+    function appendMessage(senderDisplay, message, timestamp, senderId, loggedInUserId) {
         const chatMessages = document.getElementById("chatMessages");
 
+        const isMyMessage = senderId === loggedInUserId; // ✅ Check if it's the current user's message
         const alignment = isMyMessage ? "text-end" : "text-start";
         const bgClass = isMyMessage ? "bg-primary text-white" : "bg-secondary text-dark";
 
         const messageHtml = `
         <div class="${alignment} mb-3">
-            <strong>${senderDisplay.normalizedUserName}:</strong>
+            <strong>${isMyMessage ? "You" : senderDisplay}:</strong>
             <p class="${bgClass} rounded p-2">${message}</p>
             <small>${new Date(timestamp).toLocaleTimeString()}</small>
         </div>
@@ -149,6 +166,8 @@
         chatMessages.innerHTML += messageHtml;
         chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest message
     }
+
+
 
     // ✅ Send Message Function
     document.getElementById("sendMessage").addEventListener("click", async () => {
@@ -196,20 +215,38 @@
 
         activeUserNameElement.textContent = userEmail;
         activeUserNameElement.dataset.userId = userId;
-        chatMessages.innerHTML = `<h4>Chatting with ${userEmail}</h4>`;
+        chatMessages.innerHTML = ""; // Clear previous chat messages
 
-        // Fetch previous chat messages
+        let currentUserId = null;
+
+        // ✅ Fetch current user ID before processing messages
         try {
-            const response = await fetch(`/api/messages/${userId}`);
+            const response = await fetch("/api/users/me");
+            if (response.ok) {
+                const data = await response.json();
+                currentUserId = data.userId; // Populate currentUserId
+            } else {
+                console.error("Failed to fetch current user.");
+            }
+        } catch (error) {
+            console.error("Error fetching current user:", error);
+        }
+
+        try {
+            const response = await fetch(`/api/Message/messages/${userId}`);
             const messages = await response.json();
 
             messages.forEach(msg => {
-                appendMessage(userEmail, msg.message, msg.sentAt, msg.senderId === currentUserId);
+                const isMyMessage = msg.senderId === currentUserId; // ✅ Check if it's the current user's message
+                appendMessage(isMyMessage ? "You" : userEmail, msg.message, msg.sentAt, msg.senderId, currentUserId);
             });
+
         } catch (err) {
             console.error("Error fetching chat history:", err);
         }
     }
+
+
 
 
     connection.onclose(err => {

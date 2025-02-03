@@ -28,11 +28,15 @@ namespace EmpChat.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
+            Console.WriteLine($"Fetching messages between {currentUserId} and {userId}");
+
             var messages = await _context.ChatMessages
                 .Where(m => (m.SenderId == currentUserId && m.ReceiverId == userId) ||
                             (m.SenderId == userId && m.ReceiverId == currentUserId))
                 .OrderBy(m => m.SentAt)
                 .ToListAsync();
+
+            Console.WriteLine($"Messages found: {messages.Count}");
 
             return Ok(messages);
         }

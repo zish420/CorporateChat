@@ -3,7 +3,7 @@
 }
 
 <div class="container-fluid">
-    <input type="hidden" id="currentUserId" value="@User.FindFirst("id")?.Value" />
+    <div id="currentUser" data-user-id="@User.FindFirst("id")?.Value"></div>
 
     <div class="row vh-100">
         <!-- Left Sidebar: Profile Picture, Search Box, and Chat List -->
@@ -87,6 +87,7 @@
             background-color: #f0f0f0;
         }
 </style>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.15/signalr.min.js"></script>
 <script src="/lib/SignalR/chat.js"></script>
