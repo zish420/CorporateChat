@@ -19,7 +19,7 @@ namespace EmpChat.Hubs
         {
             var senderId = Context.UserIdentifier;
             var senderUser = await _userManager.FindByIdAsync(senderId);
-            var senderEmail = senderUser?.Email ?? "Unknown User"; // Ensure we get an email
+            var senderEmail = senderUser; 
 
             if (string.IsNullOrEmpty(senderId))
             {
@@ -40,7 +40,7 @@ namespace EmpChat.Hubs
             _context.ChatMessages.Add(chatMessage);
             await _context.SaveChangesAsync();
 
-            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt, senderEmail);
+            await Clients.User(receiverId).SendAsync("ReceiveMessage", senderId, message, chatMessage.SentAt, senderUser);
         }
 
 

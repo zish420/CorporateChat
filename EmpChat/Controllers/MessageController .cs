@@ -21,16 +21,12 @@ namespace EmpChat.Controllers
             _chatHub = chatHub;
         }
 
-        [HttpGet("messages")]
-        [Authorize] // Ensure only authenticated users can access this
+        [HttpGet("messages/{userId}")]
+        [Authorize]
         public async Task<IActionResult> GetMessages(string userId)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                return Unauthorized("User is not authenticated.");
-            }
+            if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
 
             var messages = await _context.ChatMessages
                 .Where(m => (m.SenderId == currentUserId && m.ReceiverId == userId) ||
@@ -40,6 +36,29 @@ namespace EmpChat.Controllers
 
             return Ok(messages);
         }
+
+        [HttpGet("recent-chats")]
+        [Authorize]
+        public async Task<IActionResult> GetRecentChats()
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(currentUserId)) return Unauthorized();
+
+            var recentChats = await _context.ChatMessages
+                .Where(m => m.SenderId == currentUserId || m.ReceiverId == currentUserId)
+                .GroupBy(m => m.SenderId == currentUserId ? m.ReceiverId : m.SenderId)
+                .Select(g => new
+                {
+                    ChatPartnerId = g.Key,
+                    LastMessageTime = g.Max(m => m.SentAt)
+                })
+                .OrderByDescending(g => g.LastMessageTime)
+                .ToListAsync();
+
+            return Ok(recentChats);
+        }
+
+
 
         [HttpPost("send")]
         [Authorize]
