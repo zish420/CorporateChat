@@ -51,6 +51,13 @@ namespace EmpChat.Controllers
         // GET: Employees/Create
         public IActionResult Create()
         {
+            var rolesFromDb = _context.Roles.Select(r => new SelectListItem
+            {
+                Value = r.Name,  // Ensure 'Name' contains Admin, Manager, Employee
+                Text = r.Name
+            }).ToList();
+
+            ViewBag.Roles = rolesFromDb;  
             return View();
         }
 
@@ -85,6 +92,15 @@ namespace EmpChat.Controllers
             {
                 return NotFound();
             }
+
+            var rolesFromDb = _context.Roles.Select(r => new SelectListItem
+            {
+                Value = r.Name,  // Ensure 'Name' contains Admin, Manager, Employee
+                Text = r.Name
+            }).ToList();
+
+            ViewBag.Roles = rolesFromDb;
+
             return View(employee);
         }
 

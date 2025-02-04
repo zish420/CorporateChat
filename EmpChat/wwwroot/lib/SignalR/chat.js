@@ -172,7 +172,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="p-2 rounded ${bgClass}" style="max-width: 60%;">
                     <strong>${isMyMessage ? "You" : senderDisplay}:</strong>
                     <p class="m-0">${message}</p>
-                    <small class="d-block text-muted">${new Date(timestamp).toLocaleTimeString()}</small>
+                    <small class="d-block text-white">${new Date(timestamp).toLocaleTimeString()}</small>
                 </div>
             </div>
         `;
